@@ -1,4 +1,9 @@
 def load_data(path="."):
+    '''
+    Loads the data stored ad the doc_vectors.csv, classes files and the feature identifiers located at the given path
+    :param path: Folder path
+    :return: The data matrix, a vector with the corresponding labels and another vector containing the feature names.
+    '''
     import numpy as np
 
     X = np.loadtxt(path+"/"+"doc_vectors.csv", delimiter=",")
@@ -9,28 +14,36 @@ def load_data(path="."):
     return X, y, features
 
 
-def build_classifier(X, y, features, path="."):
+def build_tree_classifier(X, y, features,  target_names = ['negative', 'positive'], path=None):
+    '''
+    Builds a decision tree classifier and fits the data given. Optionally, it can draw the tree and store it as a PDF file
+    :param X: Data matrix with one row per example and one column per feature
+    :param y: Labels (one per example)
+    :param features: Identifier of each feature
+    :param target_names: Names of the labels in ascending order according to its number.
+    :param path: If given, a pdf with the obtained tree is created at the specified folder path.
+    :return: The trained classifier
+    '''
     import numpy as np
     from sklearn import tree
     import pydotplus
     from collections import Counter
     from imblearn.over_sampling import SMOTE
 
-    sm = SMOTE(random_state=42)
-    X_res, y_res = sm.fit_sample(X, y)
-    print('Resampled dataset shape {}'.format(Counter(y_res)))
+    #sm = SMOTE(random_state=42)
+    #X_res, y_res = sm.fit_sample(X, y)
+    #print('Resampled dataset shape {}'.format(Counter(y_res)))
     clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=5)
-    clf = clf.fit(X_res, y_res)
-    target_names = np.array(['schizo', 'non-schizo'])#target classes in ascending numerical order
-    #target_names[np.where(y_res == '-1')] = 'schizo'
-    #target_names[np.where(y_res == '1')] = 'nonschizo'
-    dot_data = tree.export_graphviz(clf, out_file=None,feature_names=features,
-                                    class_names=target_names,
-                                    filled=True, rounded=True)
-    graph = pydotplus.graph_from_dot_data(dot_data)
-    graph.write_pdf(path+"/"+"schizo.pdf")
+    clf = clf.fit(X, y)
 
-    return X_res, y_res, target_names, clf
+
+    if path != None:
+        target_names = np.array(target_names)  # target classes in ascending numerical order
+        dot_data = tree.export_graphviz(clf, out_file=None,feature_names=features, class_names=target_names,filled=True, rounded=True)
+        graph = pydotplus.graph_from_dot_data(dot_data)
+        graph.write_pdf(path+"/"+"schizo.pdf")
+
+    return clf
 
 def vectorize(path='.'):
     import numpy as np
