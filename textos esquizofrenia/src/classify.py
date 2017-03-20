@@ -53,6 +53,8 @@ k = int(options.kfold)
 X_tr,y_tr,features_train = load_data(training_data_path)
 X_test, y_test, features_test  = load_data(testing_data_path)
 
+
+
 run_aucmeans = []
 negclass_f1 = []
 negclass_precision = []
@@ -91,7 +93,7 @@ for run in range(1, nruns+1):
 
     #clf = svm.SVC(kernel='linear', probability=True, random_state=random_state)
     #clf = svm.OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
-    clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=7)
+    clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=5)
 
 
     mean_tpr = 0.0

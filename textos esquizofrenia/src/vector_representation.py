@@ -45,7 +45,7 @@ def build_tree_classifier(X, y, features,  target_names = ['negative', 'positive
 
     return clf
 
-def vectorize(path='.'):
+def vectorize(selected_features, path='.'):
     import numpy as np
     import json
 
@@ -56,7 +56,7 @@ def vectorize(path='.'):
     with open(path+'/'+'max_tagfreq.json', 'r') as fp:
         max_tagfreq= json.load(fp)
 
-
+    #print "The following features will be selected:",','.join(selected_features)
     doc_ids= [l.strip().split(" ")[0] for l in open(path+'/'+'classes')]
     #doc_ids = max_tagfreq.keys()
 
@@ -69,7 +69,7 @@ def vectorize(path='.'):
     '''
     To select meta-tags (Nouns, Determiner)
     '''
-    selected_features = [u'N']
+    #selected_features = [u'N']
     # META-TAGS
     # [u'A', u'C', u'D', u'F', u'I', u'N', u'P'
     # , u'R', u'S', u'V', u'W', u'Z']
@@ -159,9 +159,13 @@ if __name__ == "__main__":
 
 
     if use_existing_features:
-        vectorize_with_previous_features(path='/Volumes/SSDII/Users/juan/git/PUCV-projects/textos/data/testing')
+        vectorize_with_previous_features(path='.')
     else:
-        vectorize(path='/Volumes/SSDII/Users/juan/git/PUCV-projects/textos/data/training')
+        if len(sys.argv) > 1:
+            vectorize(sys.argv[1].split(',') ,path='.')
+        else:
+            print "Usage:",sys.argv[0]," [use-features]|[comma_separated_list_of_freeling-features]"
+            sys.exit()
     #X,y,features = load_data()
     #X_res, y_res, target_names, clf = build_classifier(X,y,features)
     #pickle.dump((X_res, y_res, target_names, clf), open("model.p","w"))
