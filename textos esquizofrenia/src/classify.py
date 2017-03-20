@@ -12,7 +12,17 @@ from sklearn.utils import shuffle
 import numpy as np
 from collections import Counter
 from imblearn.over_sampling import SMOTE
+
 from sklearn import tree
+from sklearn.svm import SVC
+from sklearn.neural_network import MLPClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.gaussian_process import GaussianProcessClassifier
+from sklearn.gaussian_process.kernels import RBF
+from sklearn.ensemble import RandomForestClassifier, AdaBoostClassifier
+from sklearn.naive_bayes import GaussianNB, MultinomialNB
+from sklearn.model_selection import GridSearchCV
+
 import sys
 sys.path.append('/home/juan/git/PUCV-projects/textos/src')
 from vector_representation import build_tree_classifier, load_data
@@ -20,6 +30,48 @@ from vector_representation import build_tree_classifier, load_data
 
 import sys
 import optparse
+
+
+
+class AClassifier:
+    def __init__(self, inner_classifier_initialization):
+        self.clf = inner_classifier_initialization
+
+    def init_overall_variables(self):
+        self.run_aucmeans = []
+        self.negclass_f1 = []
+        self.negclass_precision = []
+        self.negclass_recall = []
+        self.posclass_f1 = []
+        self.posclass_precision = []
+        self.posclass_recall = []
+
+        self.eval_negclass_f1 = []
+        self.eval_negclass_precision = []
+        self.eval_negclass_recall = []
+        self.eval_posclass_f1 = []
+        self.eval_posclass_precision = []
+        self.eval_posclass_recall = []
+
+    def init_run_variables(self):
+        self.mean_tpr = 0.0
+        self.mean_fpr = np.linspace(0, 1, 100)
+        self.negclass_f1_sum = 0.0
+        self.negclass_precision_sum = 0.0
+        self.negclass_recall_sum = 0.0
+        self.posclass_f1_sum = 0.0
+        self.posclass_precision_sum = 0.0
+        self.posclass_recall_sum = 0.0
+
+        self.eval_negclass_f1_sum = 0.0
+        self.eval_negclass_precision_sum = 0.0
+        self.eval_negclass_recall_sum = 0.0
+        self.eval_posclass_f1_sum = 0.0
+        self.eval_posclass_precision_sum = 0.0
+        self.eval_posclass_recall_sum = 0.0
+
+
+
 
 parser = optparse.OptionParser()
 parser.add_option('--tr', '--training-path', dest='training', help='Folder path were the training data is located')
@@ -54,7 +106,33 @@ X_tr,y_tr,features_train = load_data(training_data_path)
 X_test, y_test, features_test  = load_data(testing_data_path)
 
 
+classifiers = dict()
+#classifiers["DecisionTreeClassifier(criterion='entropy', max_depth=5)"] = AClassifier(tree.DecisionTreeClassifier(criterion='entropy', max_depth=5))
 
+#classifiers["KNeighborsClassifier(3)"] = AClassifier(KNeighborsClassifier(3))
+
+param_grid = [
+  {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
+  {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
+ ]
+
+
+classifiers["GridSearchCV(estimator=SVC(kernel='rbf', probability=True), param_grid=param_grid, cv=3)"] = AClassifier(
+    GridSearchCV(estimator=SVC(probability=True), param_grid=param_grid, cv=3, scoring='f1'))
+
+##classifiers["SVC(kernel='rbf', probability=True, C=1)"] = AClassifier(SVC(kernel='rbf', probability=True))
+##classifiers["SVC(kernel='rbf', probability=True, gamma=2, C=1)"] = AClassifier(SVC(gamma=2, probability=True, C=1))
+##classifiers["SVC(kernel='linear', probability=True, C=0.025)"] = AClassifier(SVC(kernel="linear", probability=True, C=0.025))
+
+#classifiers["RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)"] = AClassifier(RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1))
+#classifiers["AdaBoostClassifier()"] = AClassifier(AdaBoostClassifier())
+
+#classifiers["GaussianNB()"] = AClassifier(GaussianNB())
+#classifiers["MultinomialNB()"] = AClassifier(MultinomialNB())
+
+
+
+'''
 run_aucmeans = []
 negclass_f1 = []
 negclass_precision = []
@@ -69,6 +147,12 @@ eval_negclass_recall = []
 eval_posclass_f1 = []
 eval_posclass_precision = []
 eval_posclass_recall = []
+'''
+
+
+for name_c, c in classifiers.items():
+    c.init_overall_variables()
+
 
 for run in range(1, nruns+1):
     # Shuffling the training data for each run
@@ -91,14 +175,15 @@ for run in range(1, nruns+1):
     random_state = np.random.RandomState(0)
     cv = StratifiedKFold(n_splits=k)
 
-    #clf = svm.SVC(kernel='linear', probability=True, random_state=random_state)
-    #clf = svm.OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
-    clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=5)
+    ##clf = svm.SVC(kernel='linear', probability=True, random_state=random_state)
+    ##clf = svm.OneClassSVM(nu=0.1, kernel="rbf", gamma=0.1)
 
+    '''
+    clf = tree.DecisionTreeClassifier(criterion='entropy', max_depth=5)
 
     mean_tpr = 0.0
     mean_fpr = np.linspace(0, 1, 100)
-
+    '''
 
     y_tt = np.array(map(int,y_tt))
     y_ts = np.array(map(int,y_ts))
@@ -108,6 +193,7 @@ for run in range(1, nruns+1):
 
     i = 0
 
+    '''
     negclass_f1_sum = 0.0
     negclass_precision_sum = 0.0
     negclass_recall_sum = 0.0
@@ -121,75 +207,82 @@ for run in range(1, nruns+1):
     eval_posclass_f1_sum = 0.0
     eval_posclass_precision_sum = 0.0
     eval_posclass_recall_sum = 0.0
+    '''
+    for name_c, c in classifiers.items():
+        c.init_run_variables()
+
 
     for (train, test), color in zip(cv.split(X_tt, y_tt), colors):
         #predicted_ = clf.fit(X_tt[train], y_tt[train]).predict(X_tt[test])
         #print(metrics.classification_report(y[test], predicted_) )
 
-        model = clf.fit(X_tt[train], y_tt[train])
-        probas_ = model.predict_proba(X_tt[test])
-        y_test_split = model.predict(X_tt[test])
+        for name_c, c in classifiers.items():
+            model = c.clf.fit(X_tt[train], y_tt[train])
+            print "\n",c.clf.get_params(),"\n"
+            probas_ = model.predict_proba(X_tt[test])
+            y_test_split = model.predict(X_tt[test])
 
-        # precision, recall, F-measure and support
-        precision, recall, f1, support = precision_recall_fscore_support(y_tt[test], y_test_split)
+            # precision, recall, F-measure and support
+            precision, recall, f1, support = precision_recall_fscore_support(y_tt[test], y_test_split)
 
-        negclass_f1_sum += f1[0]
-        negclass_precision_sum += precision[0]
-        negclass_recall_sum += recall[0]
+            c.negclass_f1_sum += f1[0]
+            c.negclass_precision_sum += precision[0]
+            c.negclass_recall_sum += recall[0]
 
-        posclass_f1_sum += f1[1]
-        posclass_precision_sum += precision[1]
-        posclass_recall_sum += recall[1]
+            c.posclass_f1_sum += f1[1]
+            c.posclass_precision_sum += precision[1]
+            c.posclass_recall_sum += recall[1]
 
-        # Evaluating over the test set
-        y_test_split = model.predict(X_ts)
+            # Evaluating over the test set
+            y_test_split = model.predict(X_ts)
 
-        # precision, recall, F-measure and support
-        precision, recall, f1, support = precision_recall_fscore_support(y_ts, y_test_split)
+            # precision, recall, F-measure and support
+            precision, recall, f1, support = precision_recall_fscore_support(y_ts, y_test_split)
 
-        eval_negclass_f1_sum += f1[0]
-        eval_negclass_precision_sum += precision[0]
-        eval_negclass_recall_sum += recall[0]
+            c.eval_negclass_f1_sum += f1[0]
+            c.eval_negclass_precision_sum += precision[0]
+            c.eval_negclass_recall_sum += recall[0]
 
-        eval_posclass_f1_sum += f1[1]
-        eval_posclass_precision_sum += precision[1]
-        eval_posclass_recall_sum += recall[1]
+            c.eval_posclass_f1_sum += f1[1]
+            c.eval_posclass_precision_sum += precision[1]
+            c.eval_posclass_recall_sum += recall[1]
 
-        #print "Precision:", precision, "Recall:", recall, "F1:", f1, "Support:", support
-        #print(metrics.classification_report(y_tt[test], y_test_split, target_names=['Schizo', 'Non-Schizo']) )
+            #print "Precision:", precision, "Recall:", recall, "F1:", f1, "Support:", support
+            #print(metrics.classification_report(y_tt[test], y_test_split, target_names=['Schizo', 'Non-Schizo']) )
 
-        fpr, tpr, thresholds = roc_curve(y_tt[test], probas_[:, 1])
-        mean_tpr += interp(mean_fpr, fpr, tpr)
-        mean_tpr[0] = 0.0
-        roc_auc = auc(fpr, tpr)
-        plt.plot(fpr, tpr, lw=lw, color=color,label='ROC fold %d (area = %0.2f)' % (i, roc_auc))
+            fpr, tpr, thresholds = roc_curve(y_tt[test], probas_[:, 1])
+            c.mean_tpr += interp(c.mean_fpr, fpr, tpr)
+            c.mean_tpr[0] = 0.0
+            #roc_auc = auc(fpr, tpr)
+        #plt.plot(fpr, tpr, lw=lw, color=color,label='ROC fold %d (area = %0.2f)' % (i, roc_auc))
         i += 1
 
-    plt.plot([0, 1], [0, 1], linestyle='--', lw=lw, color='k',label='Luck')
-    mean_tpr /= cv.get_n_splits(X_tt, y_tt)
-    mean_tpr[-1] = 1.0
-    mean_auc = auc(mean_fpr, mean_tpr)
+    for name_c, c in classifiers.items():
+        #plt.plot([0, 1], [0, 1], linestyle='--', lw=lw, color='k',label='Luck')
+        c.mean_tpr /= cv.get_n_splits(X_tt, y_tt)
+        c.mean_tpr[-1] = 1.0
+        c.mean_auc = auc(c.mean_fpr, c.mean_tpr)
 
-    plt.plot(mean_fpr, mean_tpr, color='g', linestyle='--', label='Mean ROC (area = %0.2f)' % mean_auc, lw=lw)
+        #plt.plot(mean_fpr, mean_tpr, color='g', linestyle='--', label='Mean ROC (area = %0.2f)' % mean_auc, lw=lw)
 
-    run_aucmeans.append(mean_auc)
+        c.run_aucmeans.append(c.mean_auc)
 
-    negclass_f1.append(negclass_f1_sum/i)
-    negclass_precision.append(negclass_precision_sum/i)
-    negclass_recall.append(negclass_recall_sum/i)
-    posclass_f1.append(posclass_f1_sum/i)
-    posclass_precision.append(posclass_precision_sum/i)
-    posclass_recall.append(posclass_recall_sum/i)
+        c.negclass_f1.append(c.negclass_f1_sum/i)
+        c.negclass_precision.append(c.negclass_precision_sum/i)
+        c.negclass_recall.append(c.negclass_recall_sum/i)
+        c.posclass_f1.append(c.posclass_f1_sum/i)
+        c.posclass_precision.append(c.posclass_precision_sum/i)
+        c.posclass_recall.append(c.posclass_recall_sum/i)
 
-    eval_negclass_f1.append(eval_negclass_f1_sum/i)
-    eval_negclass_precision.append(eval_negclass_precision_sum/i)
-    eval_negclass_recall.append(eval_negclass_recall_sum/i)
-    eval_posclass_f1.append(eval_posclass_f1_sum/i)
-    eval_posclass_precision.append(eval_posclass_precision_sum/i)
-    eval_posclass_recall.append(eval_posclass_recall_sum/i)
+        c.eval_negclass_f1.append(c.eval_negclass_f1_sum/i)
+        c.eval_negclass_precision.append(c.eval_negclass_precision_sum/i)
+        c.eval_negclass_recall.append(c.eval_negclass_recall_sum/i)
+        c.eval_posclass_f1.append(c.eval_posclass_f1_sum/i)
+        c.eval_posclass_precision.append(c.eval_posclass_precision_sum/i)
+        c.eval_posclass_recall.append(c.eval_posclass_recall_sum/i)
 
 
-
+    '''
     plt.xlim([0, 1.0])
     plt.ylim([0, 1.0])
     plt.xlabel('False Positive Rate')
@@ -199,47 +292,56 @@ for run in range(1, nruns+1):
     plt.savefig(output_path+'/'+'roc_schizo_r'+str(run)+'.png')
     #plt.show()
     plt.close()
+    '''
 
     #predicted_ = clf.fit(X_tt, y_tt).predict(X_ts)
     #print(metrics.classification_report(y_ts, predicted_, target_names=['Schizo','Non-Schizo']) )
-
-run_aucmeans = np.array(run_aucmeans)
-negclass_f1 = np.array(negclass_f1)
-negclass_precision = np.array(negclass_precision)
-negclass_recall = np.array(negclass_recall)
-posclass_f1 = np.array(posclass_f1)
-posclass_precision = np.array(posclass_precision)
-posclass_recall = np.array(posclass_recall)
-
-eval_negclass_f1 = np.array(eval_negclass_f1)
-eval_negclass_precision = np.array(eval_negclass_precision)
-eval_negclass_recall = np.array(eval_negclass_recall)
-eval_posclass_f1 = np.array(eval_posclass_f1)
-eval_posclass_precision = np.array(eval_posclass_precision)
-eval_posclass_recall = np.array(eval_posclass_recall)
-
 
 print "* %d runs were executed and within each run a %d-Fold CV was performed." % (nruns, k)
 print "* At the end of each CV step an evaluation set (testing data) was presented to the classifier. Average performance attained is presented."
 print "* Within each run the training data was shuffled."
 print "* Average performance measures computed over all run means (each run generated a k-fold average)\n"
-print "Performance over the training set:"
-print "Mean AUC (computed over all runs) is %0.4f(%0.4f)" % (np.mean(run_aucmeans), np.std(run_aucmeans))
-print '{:<10} {:<12} {:<12} {:<12}'.format('class','F1','Precision','Recall')
-print '{:<10} {:<12} {:<12} {:<12}'.format('----------','------------','------------','------------')
-print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Schizo', np.mean(negclass_f1), np.std(negclass_f1),
-                                     np.mean(negclass_precision), np.std(negclass_precision),
-                                     np.mean(negclass_recall), np.std(negclass_recall))
-print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(posclass_f1), np.std(posclass_f1),
-                                     np.mean(posclass_precision), np.std(posclass_precision),
-                                     np.mean(posclass_recall), np.std(posclass_recall))
-print ""
-print "Performance over the evaluation set:"
-print '{:<10} {:<12} {:<12} {:<12}'.format('class','F1','Precision','Recall')
-print '{:<10} {:<12} {:<12} {:<12}'.format('----------','------------','------------','------------')
-print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Schizo', np.mean(eval_negclass_f1), np.std(eval_negclass_f1),
-                                     np.mean(eval_negclass_precision), np.std(eval_negclass_precision),
-                                     np.mean(eval_negclass_recall), np.std(eval_negclass_recall))
-print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(eval_posclass_f1), np.std(eval_posclass_f1),
-                                     np.mean(eval_posclass_precision), np.std(eval_posclass_precision),
-                                     np.mean(eval_posclass_recall), np.std(eval_posclass_recall))
+
+for name_c, c in classifiers.items():
+    run_aucmeans = np.array(c.run_aucmeans)
+    negclass_f1 = np.array(c.negclass_f1)
+    negclass_precision = np.array(c.negclass_precision)
+    negclass_recall = np.array(c.negclass_recall)
+    posclass_f1 = np.array(c.posclass_f1)
+    posclass_precision = np.array(c.posclass_precision)
+    posclass_recall = np.array(c.posclass_recall)
+
+    eval_negclass_f1 = np.array(c.eval_negclass_f1)
+    eval_negclass_precision = np.array(c.eval_negclass_precision)
+    eval_negclass_recall = np.array(c.eval_negclass_recall)
+    eval_posclass_f1 = np.array(c.eval_posclass_f1)
+    eval_posclass_precision = np.array(c.eval_posclass_precision)
+    eval_posclass_recall = np.array(c.eval_posclass_recall)
+
+    print ""
+    print "Classifier: ", name_c
+    if name_c.startswith('Grid'):
+        best_parameters = c.clf.best_estimator_.get_params()
+        for param_name in sorted(best_parameters.keys()):
+            print("\t%s: %r" % (param_name, best_parameters[param_name]))
+
+    print "Performance over the training set:"
+    print "Mean AUC (computed over all runs) is %0.4f(%0.4f)" % (np.mean(run_aucmeans), np.std(run_aucmeans))
+    print '{:<10} {:<12} {:<12} {:<12}'.format('class','F1','Precision','Recall')
+    print '{:<10} {:<12} {:<12} {:<12}'.format('----------','------------','------------','------------')
+    print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Schizo', np.mean(negclass_f1), np.std(negclass_f1),
+                                         np.mean(negclass_precision), np.std(negclass_precision),
+                                         np.mean(negclass_recall), np.std(negclass_recall))
+    print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(posclass_f1), np.std(posclass_f1),
+                                         np.mean(posclass_precision), np.std(posclass_precision),
+                                         np.mean(posclass_recall), np.std(posclass_recall))
+    print ""
+    print "Performance over the evaluation set:"
+    print '{:<10} {:<12} {:<12} {:<12}'.format('class','F1','Precision','Recall')
+    print '{:<10} {:<12} {:<12} {:<12}'.format('----------','------------','------------','------------')
+    print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Schizo', np.mean(eval_negclass_f1), np.std(eval_negclass_f1),
+                                         np.mean(eval_negclass_precision), np.std(eval_negclass_precision),
+                                         np.mean(eval_negclass_recall), np.std(eval_negclass_recall))
+    print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(eval_posclass_f1), np.std(eval_posclass_f1),
+                                         np.mean(eval_posclass_precision), np.std(eval_posclass_precision),
+                                         np.mean(eval_posclass_recall), np.std(eval_posclass_recall))
