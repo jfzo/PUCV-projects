@@ -43,6 +43,7 @@ function build_vectors_for_training_testing_sets {
 if [ $# -eq 0 ]
   then
     echo "Usage:$0 freeling_features_to_use"
+    echo "Example: $0 A,C,D,F,I,N,P,R,S,V,W,Z"
     exit 1
 fi
 

@@ -103,34 +103,56 @@ k = int(options.kfold)
 
 # Loading training and testing data
 X_tr,y_tr,features_train = load_data(training_data_path)
+y_tr = np.array(map(int,y_tr))
 X_test, y_test, features_test  = load_data(testing_data_path)
 
 
 classifiers = dict()
-#classifiers["DecisionTreeClassifier(criterion='entropy', max_depth=5)"] = AClassifier(tree.DecisionTreeClassifier(criterion='entropy', max_depth=5))
 
-#classifiers["KNeighborsClassifier(3)"] = AClassifier(KNeighborsClassifier(3))
+param_grid = [
+  {'max_depth': [3,5,7,10,None], 'min_samples_split': [2,4,6,8,10], 'criterion':['gini','entropy'], 'min_samples_leaf':[1,3,5,7,9,11]}
+]
+classifiers["GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
+    GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
+
+
+param_grid = [
+  {'n_neighbors': [3,5,7,9,12,15], 'weights':['uniform', 'distance'], 'p':[1,2]}
+]
+classifiers["GridSearchCV(estimator=KNeighborsClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
+    GridSearchCV(estimator=KNeighborsClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
+
 
 param_grid = [
   {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
   {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
  ]
-
-
-classifiers["GridSearchCV(estimator=SVC(kernel='rbf', probability=True), param_grid=param_grid, cv=3)"] = AClassifier(
+classifiers["GridSearchCV(estimator=SVC(kernel='rbf', probability=True), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
     GridSearchCV(estimator=SVC(probability=True), param_grid=param_grid, cv=3, scoring='f1'))
 
-##classifiers["SVC(kernel='rbf', probability=True, C=1)"] = AClassifier(SVC(kernel='rbf', probability=True))
-##classifiers["SVC(kernel='rbf', probability=True, gamma=2, C=1)"] = AClassifier(SVC(gamma=2, probability=True, C=1))
-##classifiers["SVC(kernel='linear', probability=True, C=0.025)"] = AClassifier(SVC(kernel="linear", probability=True, C=0.025))
 
-#classifiers["RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1)"] = AClassifier(RandomForestClassifier(max_depth=5, n_estimators=10, max_features=1))
+param_grid = [
+  {'n_estimators':[4,8,10,14,20], 'criterion':['gini','entropy'], 'max_features':['auto','sqrt','log2',None],
+   'max_depth': [3,5,7,10,None], 'min_samples_split': [2,4,6,8,10], 'min_samples_leaf':[1,3,5,7,9,11]}
+]
+classifiers["GridSearchCV(estimator=RandomForestClassifier((), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
+    GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
+
 #classifiers["AdaBoostClassifier()"] = AClassifier(AdaBoostClassifier())
 
 #classifiers["GaussianNB()"] = AClassifier(GaussianNB())
 #classifiers["MultinomialNB()"] = AClassifier(MultinomialNB())
 
-
+print "Parameter tuning procedure for each classfier..."
+X_train, y_train = shuffle(X_tr, y_tr)
+# Balancing the dataset (training and testing)
+sm = SMOTE(random_state=42)
+X_tt, y_tt = sm.fit_sample(X_train, y_train)
+for name_c, c in classifiers.items():
+    print "Tuning",name_c
+    model = c.clf.fit(X_tt, y_tt).best_estimator_
+    c.clf = model
+    print "... ok."
 
 '''
 run_aucmeans = []
@@ -211,14 +233,14 @@ for run in range(1, nruns+1):
     for name_c, c in classifiers.items():
         c.init_run_variables()
 
-
     for (train, test), color in zip(cv.split(X_tt, y_tt), colors):
         #predicted_ = clf.fit(X_tt[train], y_tt[train]).predict(X_tt[test])
         #print(metrics.classification_report(y[test], predicted_) )
 
         for name_c, c in classifiers.items():
+            #model = c.clf.fit(X_tt[train], y_tt[train]).best_estimator_
             model = c.clf.fit(X_tt[train], y_tt[train])
-            print "\n",c.clf.get_params(),"\n"
+            #print "\n",c.clf.get_params(),"\n"
             probas_ = model.predict_proba(X_tt[test])
             y_test_split = model.predict(X_tt[test])
 
@@ -320,6 +342,7 @@ for name_c, c in classifiers.items():
 
     print ""
     print "Classifier: ", name_c
+
     if name_c.startswith('Grid'):
         best_parameters = c.clf.best_estimator_.get_params()
         for param_name in sorted(best_parameters.keys()):
