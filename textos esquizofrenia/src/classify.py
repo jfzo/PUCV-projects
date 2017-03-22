@@ -31,6 +31,30 @@ from vector_representation import build_tree_classifier, load_data
 import sys
 import optparse
 
+import logging
+
+def init_logging(fname):
+    logger = logging.getLogger(__name__)
+    logger.setLevel(logging.INFO)
+
+    # create file handler which logs even debug messages
+    fh = logging.FileHandler(fname)
+    fh.setLevel(logging.INFO)
+    # create console handler with a higher log level
+
+    ch = logging.StreamHandler()
+    ch.setLevel(logging.INFO)
+
+    # create formatter and add it to the handlers
+    #formatter = logging.Formatter('%(asctime)s - %(levelname)s %(module)s[%(lineno)d] - %(message)s')
+    formatter = logging.Formatter('%(message)s')
+    ch.setFormatter(formatter)
+    fh.setFormatter(formatter)
+
+    # add the handlers to logger
+    logger.addHandler(ch)
+    logger.addHandler(fh)
+    return logger
 
 
 class AClassifier:
@@ -79,7 +103,7 @@ parser.add_option('--ts', '--testing-path', dest='testing', help='Folder path we
 parser.add_option('-o', '--output-path', dest='output', help='Output path were the ROC figures will be saved')
 parser.add_option('-r', '--nruns', dest='nruns', help='Number of runs to perform (training data is shuffled and a k-fold cv is performed in each one)')
 parser.add_option('-k', '--kfold', dest='kfold', help='Number of folds that will be created in each CV process.')
-
+parser.add_option('-l', '--log', dest='log', help='File name were the results will be saved.')
 
 (options, args) = parser.parse_args()
 
@@ -99,6 +123,8 @@ k = int(options.kfold)
 # training_data_path = '/home/juan/git/PUCV-projects/textos/data/training'
 #testing_data_path = '/home/juan/git/PUCV-projects/textos/data/testing'
 #nruns = 5
+logger = init_logging(options.log)
+
 
 
 # Loading training and testing data
@@ -108,13 +134,18 @@ X_test, y_test, features_test  = load_data(testing_data_path)
 
 
 classifiers = dict()
+param_grid = [
+  {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
+  {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
+ ]
+classifiers["GridSearchCV(estimator=SVC(kernel='rbf', probability=True), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
+    GridSearchCV(estimator=SVC(probability=True), param_grid=param_grid, cv=3, scoring='f1'))
 
 param_grid = [
   {'max_depth': [3,5,7,10,None], 'min_samples_split': [2,4,6,8,10], 'criterion':['gini','entropy'], 'min_samples_leaf':[1,3,5,7,9,11]}
 ]
 classifiers["GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
     GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
-
 
 param_grid = [
   {'n_neighbors': [3,5,7,9,12,15], 'weights':['uniform', 'distance'], 'p':[1,2]}
@@ -124,35 +155,34 @@ classifiers["GridSearchCV(estimator=KNeighborsClassifier(), param_grid=param_gri
 
 
 param_grid = [
-  {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
-  {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
- ]
-classifiers["GridSearchCV(estimator=SVC(kernel='rbf', probability=True), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
-    GridSearchCV(estimator=SVC(probability=True), param_grid=param_grid, cv=3, scoring='f1'))
-
-
-param_grid = [
   {'n_estimators':[4,8,10,14,20], 'criterion':['gini','entropy'], 'max_features':['auto','sqrt','log2',None],
    'max_depth': [3,5,7,10,None], 'min_samples_split': [2,4,6,8,10], 'min_samples_leaf':[1,3,5,7,9,11]}
 ]
 classifiers["GridSearchCV(estimator=RandomForestClassifier((), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
     GridSearchCV(estimator=RandomForestClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
 
-#classifiers["AdaBoostClassifier()"] = AClassifier(AdaBoostClassifier())
+param_grid = [
+  {'learning_rate':[0.7, 0.9, 1.0, 1.2, 1.5], 'n_estimators':[20, 30, 40, 50, 60, 70], 'base_estimator':
+      [tree.DecisionTreeClassifier(max_depth=1), tree.DecisionTreeClassifier(max_depth=3), tree.DecisionTreeClassifier(max_depth=5), MultinomialNB(), GaussianNB()]}
+]
+classifiers["GridSearchCV(estimator=AdaBoostClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
+    GridSearchCV(estimator=AdaBoostClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
+
+
 
 #classifiers["GaussianNB()"] = AClassifier(GaussianNB())
 #classifiers["MultinomialNB()"] = AClassifier(MultinomialNB())
 
-print "Parameter tuning procedure for each classfier..."
+logger.info("Parameter tuning procedure for each classfier...")
 X_train, y_train = shuffle(X_tr, y_tr)
 # Balancing the dataset (training and testing)
 sm = SMOTE(random_state=42)
 X_tt, y_tt = sm.fit_sample(X_train, y_train)
 for name_c, c in classifiers.items():
-    print "Tuning",name_c
+    logger.info("Tuning "+name_c)
     model = c.clf.fit(X_tt, y_tt).best_estimator_
     c.clf = model
-    print "... ok."
+    logger.info("... ok.")
 
 '''
 run_aucmeans = []
@@ -319,10 +349,10 @@ for run in range(1, nruns+1):
     #predicted_ = clf.fit(X_tt, y_tt).predict(X_ts)
     #print(metrics.classification_report(y_ts, predicted_, target_names=['Schizo','Non-Schizo']) )
 
-print "* %d runs were executed and within each run a %d-Fold CV was performed." % (nruns, k)
-print "* At the end of each CV step an evaluation set (testing data) was presented to the classifier. Average performance attained is presented."
-print "* Within each run the training data was shuffled."
-print "* Average performance measures computed over all run means (each run generated a k-fold average)\n"
+logger.info("* %d runs were executed and within each run a %d-Fold CV was performed." % (nruns, k))
+logger.info("* At the end of each CV step an evaluation set (testing data) was presented to the classifier. Average performance attained is presented.")
+logger.info("* Within each run the training data was shuffled.")
+logger.info("* Average performance measures computed over all run means (each run generated a k-fold average)\n")
 
 for name_c, c in classifiers.items():
     run_aucmeans = np.array(c.run_aucmeans)
@@ -340,31 +370,44 @@ for name_c, c in classifiers.items():
     eval_posclass_precision = np.array(c.eval_posclass_precision)
     eval_posclass_recall = np.array(c.eval_posclass_recall)
 
-    print ""
-    print "Classifier: ", name_c
+    logger.info("")
 
     if name_c.startswith('Grid'):
-        best_parameters = c.clf.best_estimator_.get_params()
+        logger.info("Best Classifier: "+ name_c)
+        best_parameters = c.clf.get_params()
         for param_name in sorted(best_parameters.keys()):
-            print("\t%s: %r" % (param_name, best_parameters[param_name]))
+            logger.info("\t%s: %r" % (param_name, best_parameters[param_name]))
+    else:
+        logger.info("Classifier: " + name_c)
 
-    print "Performance over the training set:"
-    print "Mean AUC (computed over all runs) is %0.4f(%0.4f)" % (np.mean(run_aucmeans), np.std(run_aucmeans))
-    print '{:<10} {:<12} {:<12} {:<12}'.format('class','F1','Precision','Recall')
-    print '{:<10} {:<12} {:<12} {:<12}'.format('----------','------------','------------','------------')
-    print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Schizo', np.mean(negclass_f1), np.std(negclass_f1),
-                                         np.mean(negclass_precision), np.std(negclass_precision),
-                                         np.mean(negclass_recall), np.std(negclass_recall))
-    print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(posclass_f1), np.std(posclass_f1),
-                                         np.mean(posclass_precision), np.std(posclass_precision),
-                                         np.mean(posclass_recall), np.std(posclass_recall))
-    print ""
-    print "Performance over the evaluation set:"
-    print '{:<10} {:<12} {:<12} {:<12}'.format('class','F1','Precision','Recall')
-    print '{:<10} {:<12} {:<12} {:<12}'.format('----------','------------','------------','------------')
-    print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Schizo', np.mean(eval_negclass_f1), np.std(eval_negclass_f1),
-                                         np.mean(eval_negclass_precision), np.std(eval_negclass_precision),
-                                         np.mean(eval_negclass_recall), np.std(eval_negclass_recall))
-    print '{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(eval_posclass_f1), np.std(eval_posclass_f1),
+    logger.info("Performance over the training set:")
+
+    logger.info("Mean AUC (computed over all runs) is %0.4f(%0.4f)" % (np.mean(run_aucmeans), np.std(run_aucmeans)) )
+
+    logger.info('{:<10} {:<12} {:<12} {:<12}'.format('class','F1','Precision','Recall'))
+
+    logger.info('{:<10} {:<12} {:<12} {:<12}'.format('----------','------------','------------','------------'))
+
+    logger.info('{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Schizo', np.mean(negclass_f1), np.std(negclass_f1),
+                                   np.mean(negclass_precision), np.std(negclass_precision),
+                                   np.mean(negclass_recall), np.std(negclass_recall)) )
+
+    logger.info('{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(posclass_f1), np.std(posclass_f1),
+                                   np.mean(posclass_precision), np.std(posclass_precision),
+                                   np.mean(posclass_recall), np.std(posclass_recall)) )
+
+    logger.info("")
+
+    logger.info("Performance over the evaluation set:")
+
+    logger.info('{:<10} {:<12} {:<12} {:<12}'.format('class','F1','Precision','Recall'))
+
+    logger.info('{:<10} {:<12} {:<12} {:<12}'.format('----------','------------','------------','------------') )
+
+    logger.info('{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Schizo', np.mean(eval_negclass_f1), np.std(eval_negclass_f1),
+                                   np.mean(eval_negclass_precision), np.std(eval_negclass_precision),
+                                   np.mean(eval_negclass_recall), np.std(eval_negclass_recall)) )
+
+    logger.info('{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(eval_posclass_f1), np.std(eval_posclass_f1),
                                          np.mean(eval_posclass_precision), np.std(eval_posclass_precision),
-                                         np.mean(eval_posclass_recall), np.std(eval_posclass_recall))
+                                         np.mean(eval_posclass_recall), np.std(eval_posclass_recall)))
