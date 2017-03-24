@@ -45,7 +45,9 @@ def build_tree_classifier(X, y, features,  target_names = ['negative', 'positive
 
     return clf
 
-def vectorize(selected_features, path='.'):
+
+
+def vectorize_with_specific_tags(selected_features, path='.'):
     import numpy as np
     import json
 
@@ -77,8 +79,13 @@ def vectorize(selected_features, path='.'):
     # u'adverb', u'adposition', u'verb', u'date', u'number']
     buffer_feat = []
     for i in range(len(feature_ids)):
-        if feature_ids[i][0] in selected_features:
-            buffer_feat.append(feature_ids[i])
+        for sf in selected_features:
+            if feature_ids[i].startswith(sf):
+                buffer_feat.append(feature_ids[i])
+
+    #for i in range(len(feature_ids)):
+    #    if feature_ids[i][0] in selected_features:
+    #        buffer_feat.append(feature_ids[i])
 
     feature_ids = buffer_feat
     Nfeatures = len(feature_ids)
@@ -147,25 +154,25 @@ def vectorize_with_previous_features(path='.'):
 
     np.savetxt(path+'/'+"doc_vectors.csv", X, delimiter=",",fmt='%.6e')
 
+
+
 if __name__ == "__main__":
     import pickle
     import sys
     #main()
-    use_existing_features = False
 
-    if len(sys.argv) > 1 and sys.argv[1] == 'use-features':
-        use_existing_features = True
-        print "Ensure that features file was already copied testing folder"
-
-
-    if use_existing_features:
-        vectorize_with_previous_features(path='.')
-    else:
-        if len(sys.argv) > 1:
-            vectorize(sys.argv[1].split(',') ,path='.')
+    if len(sys.argv) > 1:
+        if sys.argv[1] == 'use-features':
+            print "Using features collected in a previous processing."
+            vectorize_with_previous_features(path='.')
         else:
-            print "Usage:",sys.argv[0]," [use-features]|[comma_separated_list_of_freeling-features]"
-            sys.exit()
+            print "Using specific meta-pos-tags as features."
+            vectorize_with_specific_tags(sys.argv[1].split(','), path='.')
+    else:
+        print "Usage:", sys.argv[0], "[use-features]|[comma_separated_list_of_pos_tags_or_initials]"
+        sys.exit()
+
+
     #X,y,features = load_data()
     #X_res, y_res, target_names, clf = build_classifier(X,y,features)
     #pickle.dump((X_res, y_res, target_names, clf), open("model.p","w"))

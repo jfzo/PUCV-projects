@@ -134,6 +134,14 @@ X_test, y_test, features_test  = load_data(testing_data_path)
 
 
 classifiers = dict()
+
+param_grid = [
+  {'max_depth': range(2, 20)+[None], 'min_samples_split': [2,4,6,8,10], 'criterion':['entropy'], 'min_samples_leaf':[3,5,7,9,11]}
+]
+classifiers["GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
+    GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
+
+'''
 param_grid = [
   {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
   {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
@@ -141,11 +149,6 @@ param_grid = [
 classifiers["GridSearchCV(estimator=SVC(kernel='rbf', probability=True), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
     GridSearchCV(estimator=SVC(probability=True), param_grid=param_grid, cv=3, scoring='f1'))
 
-param_grid = [
-  {'max_depth': [3,5,7,10,None], 'min_samples_split': [2,4,6,8,10], 'criterion':['gini','entropy'], 'min_samples_leaf':[1,3,5,7,9,11]}
-]
-classifiers["GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
-    GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
 
 param_grid = [
   {'n_neighbors': [3,5,7,9,12,15], 'weights':['uniform', 'distance'], 'p':[1,2]}
@@ -168,7 +171,7 @@ param_grid = [
 classifiers["GridSearchCV(estimator=AdaBoostClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
     GridSearchCV(estimator=AdaBoostClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
 
-
+'''
 
 #classifiers["GaussianNB()"] = AClassifier(GaussianNB())
 #classifiers["MultinomialNB()"] = AClassifier(MultinomialNB())
