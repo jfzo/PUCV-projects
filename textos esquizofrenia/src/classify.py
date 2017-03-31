@@ -136,6 +136,13 @@ X_test, y_test, features_test  = load_data(testing_data_path)
 classifiers = dict()
 
 param_grid = [
+  {'alpha': [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]}
+]
+classifiers["GridSearchCV(estimator=MultinomialNB(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
+    GridSearchCV(estimator=MultinomialNB(), param_grid=param_grid, cv=3, scoring='f1'))
+
+
+param_grid = [
   {'max_depth': range(2, 20)+[None], 'min_samples_split': [2,4,6,8,10], 'criterion':['entropy'], 'min_samples_leaf':[3,5,7,9,11]}
 ]
 classifiers["GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
