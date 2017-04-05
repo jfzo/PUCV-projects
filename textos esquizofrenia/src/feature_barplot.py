@@ -76,7 +76,7 @@ def generate_shared_barchart(dict_counts, fname):
 
 def get_probabilistic_summary(sel_items, features, probabilities):
     #sel_items = np.argsort(clf1.feature_log_prob_[1, :])[-K:]
-    l_feats_probs = sorted( [(np.array(features)[x], np.exp(probabilities[1, x])) for x in sel_items] )
+    l_feats_probs = sorted( [(np.array(features)[x], np.exp(probabilities[x])) for x in sel_items] )
     summary_counts = dict()
     for f,p in l_feats_probs:
         if f[0] not in summary_counts:
@@ -87,8 +87,8 @@ def get_probabilistic_summary(sel_items, features, probabilities):
     for f, counts in summary_counts.items():
         if counts[0] == counts[1]:
             counts[1] = 0.0
-        else:
-            summary[f] = counts[0] - counts[1]
+
+        summary[f] = counts[0] - counts[1]
 
     return summary
 
@@ -111,43 +111,44 @@ def select_pos_features(K = 50):
     X_ttr2, y_ttr2 = sm.fit_sample(X_tr2, y_tr2)
     X_ttr3, y_ttr3 = sm.fit_sample(X_tr3, y_tr3)
 
-    clf1 = MultinomialNB(alpha=1.0)
+    clf1 = MultinomialNB(alpha=0.7)
     clf1 = clf1.fit(X_ttr1, y_ttr1)
 
-    clf2 = MultinomialNB(alpha=1.0)
+    clf2 = MultinomialNB(alpha=0.7)
     clf2 = clf2.fit(X_ttr2, y_ttr2)
 
-    clf3 = MultinomialNB(alpha=1.0)
+
+    clf3 = MultinomialNB(alpha=0.7)
     clf3 = clf3.fit(X_ttr3, y_ttr3)
 
     #                                     -- features sorted (ASC) according to dependence --
     fset11 = set( np.array(features_train1)[ np.argsort(clf1.feature_log_prob_[0, :]) ][-K:] )
     fset12 = set( np.array(features_train1)[ np.argsort(clf1.feature_log_prob_[1, :]) ][-K:] )
-    D11 = get_probabilistic_summary(np.argsort(clf1.feature_log_prob_[0, :])[-K:],features_train1,clf1.feature_log_prob_)
-    D12 = get_probabilistic_summary(np.argsort(clf1.feature_log_prob_[1, :])[-K:],features_train1,clf1.feature_log_prob_)
+    D11 = get_probabilistic_summary(np.argsort(clf1.feature_log_prob_[0, :])[-K:],features_train1, clf1.feature_log_prob_[0, :])
+    D12 = get_probabilistic_summary(np.argsort(clf1.feature_log_prob_[1, :])[-K:],features_train1, clf1.feature_log_prob_[1, :])
 
     bardict = dict()
     [bardict.setdefault(x, [D11.get(x,0.0), D12.get(x,0.0)]) for x in list(set(D11.keys()) | set(D12.keys()))]
-    generate_shared_barchart(bardict,'/home/juan/git/PUCV-projects/textos/data/feature_prob_dataset-1.pdf')
+    generate_shared_barchart(bardict,'/home/juan/git/PUCV-projects/textos/data/feature_prob_dataset-1_k'+str(K)+'.pdf')
 
 
     fset21 = set( np.array(features_train2)[ np.argsort(clf2.feature_log_prob_[0, :]) ][-K:] )
     fset22 = set( np.array(features_train2)[ np.argsort(clf2.feature_log_prob_[1, :]) ][-K:] )
-    D21 = get_probabilistic_summary(np.argsort(clf2.feature_log_prob_[0, :])[-K:],features_train2,clf2.feature_log_prob_)
-    D22 = get_probabilistic_summary(np.argsort(clf2.feature_log_prob_[1, :])[-K:],features_train2,clf2.feature_log_prob_)
+    D21 = get_probabilistic_summary(np.argsort(clf2.feature_log_prob_[0, :])[-K:],features_train2,clf2.feature_log_prob_[0, :])
+    D22 = get_probabilistic_summary(np.argsort(clf2.feature_log_prob_[1, :])[-K:],features_train2,clf2.feature_log_prob_[1, :])
 
     bardict = dict()
     [bardict.setdefault(x, [D21.get(x,0.0), D22.get(x,0.0)]) for x in list(set(D21.keys()) | set(D22.keys()))]
-    generate_shared_barchart(bardict,'/home/juan/git/PUCV-projects/textos/data/feature_prob_dataset-2.pdf')
+    generate_shared_barchart(bardict,'/home/juan/git/PUCV-projects/textos/data/feature_prob_dataset-2_k'+str(K)+'.pdf')
 
     fset31 = set( np.array(features_train3)[ np.argsort(clf3.feature_log_prob_[0, :]) ][-K:] )
     fset32 = set( np.array(features_train3)[ np.argsort(clf3.feature_log_prob_[1, :]) ][-K:] )
-    D31 = get_probabilistic_summary(np.argsort(clf3.feature_log_prob_[0, :])[-K:],features_train3,clf3.feature_log_prob_)
-    D32 = get_probabilistic_summary(np.argsort(clf3.feature_log_prob_[1, :])[-K:],features_train3,clf3.feature_log_prob_)
+    D31 = get_probabilistic_summary(np.argsort(clf3.feature_log_prob_[0, :])[-K:],features_train3,clf3.feature_log_prob_[0, :])
+    D32 = get_probabilistic_summary(np.argsort(clf3.feature_log_prob_[1, :])[-K:],features_train3,clf3.feature_log_prob_[1, :])
 
     bardict = dict()
     [bardict.setdefault(x, [D31.get(x,0.0), D32.get(x,0.0)]) for x in list(set(D31.keys()) | set(D32.keys()))]
-    generate_shared_barchart(bardict,'/home/juan/git/PUCV-projects/textos/data/feature_prob_dataset-3.pdf')
+    generate_shared_barchart(bardict,'/home/juan/git/PUCV-projects/textos/data/feature_prob_dataset-3_k'+str(K)+'.pdf')
 
     resulting_features = fset11 & fset12 & fset21 & fset22 & fset31 & fset32
 

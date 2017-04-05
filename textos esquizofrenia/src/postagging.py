@@ -47,4 +47,4 @@ for t in tags_found:
 
 tagsf.close()
 
-print "File "+options.output+" succesfully generated (punctuation removed)."
+#print "File "+options.output+" succesfully generated (punctuation removed)."

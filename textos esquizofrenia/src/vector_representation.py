@@ -47,13 +47,15 @@ def build_tree_classifier(X, y, features,  target_names = ['negative', 'positive
 
 
 
-def vectorize_with_specific_tags(selected_features, path='.'):
+def vectorize_with_specific_tags_normalized(selected_features, path='.'):
     import numpy as np
     import json
+    print "*********************************************\nCOMPUTING NORMALIZED FREQUENCIES FOR TAG FEATURES\n*********************************************\n"
 
     # Load the inverted index with the features and the freqs:
     with open(path+'/'+'inv_index.json', 'r') as fp:
         inv_ix = json.load(fp)
+
     # Load the max tag frequency in each file
     with open(path+'/'+'max_tagfreq.json', 'r') as fp:
         max_tagfreq= json.load(fp)
@@ -95,8 +97,8 @@ def vectorize_with_specific_tags(selected_features, path='.'):
         for t in feature_ids:
             fp.write(t+'\n')
 
-    print "Using features:",'/'.join(selected_features)
-    print "Features saved in file 'features'"
+    #print "Using features:",'/'.join(selected_features)
+    #print "Features saved in file 'features'"
 
     X = np.zeros((Ndocs,Nfeatures))
 
@@ -107,16 +109,18 @@ def vectorize_with_specific_tags(selected_features, path='.'):
             tf_i = inv_ix[feat].get(docid_i, 0.0) / float(max_tagfreq[docid_i])
 
             j = feature_ids.index(feat)
-            X[i, j] = tf_i * idf_feat
+            #X[i, j] = tf_i * idf_feat
+            X[i, j] = tf_i
 
 
     np.savetxt(path+'/'+"doc_vectors.csv", X, delimiter=",",fmt='%.6e')
 
 
-def vectorize_with_previous_features(path='.'):
-    print "vectorize_with_previous_features()"
+def vectorize_with_previous_features_normalized(path='.'):
+    #print "vectorize_with_previous_features()"
     import numpy as np
     import json
+    print "*************************\nCOMPUTING NORMALIZED FREQUENCIES FOR TAG FEATURES USING PREVIOUSLY EXTRACTED FEATURE\n****************************\n"
 
     # Load the inverted index with the features and the freqs:
     with open(path+'/'+'inv_index.json', 'r') as fp:
@@ -150,7 +154,112 @@ def vectorize_with_previous_features(path='.'):
                 tf_i = inv_ix[feat].get(docid_i, 0.0) / float(max_tagfreq[docid_i])
 
                 j = features.index(feat)
-                X[i, j] = tf_i * idf_feat
+                #X[i, j] = tf_i * idf_feat
+                X[i, j] = tf_i
+
+    np.savetxt(path+'/'+"doc_vectors.csv", X, delimiter=",",fmt='%.6e')
+
+
+
+def vectorize_with_specific_tags_raw(selected_features, path='.'):
+    import numpy as np
+    import json
+
+    print "*********************************************\nCOMPUTING RAW FREQUENCIES FOR TAG FEATURES\n*********************************************\n"
+
+    # Load the inverted index with the features and the freqs:
+    with open(path + '/' + 'inv_index.json', 'r') as fp:
+        inv_ix = json.load(fp)
+
+
+    # print "The following features will be selected:",','.join(selected_features)
+    doc_ids = [l.strip().split(" ")[0] for l in open(path + '/' + 'classes')]
+    # doc_ids = max_tagfreq.keys()
+
+    Ndocs = len(doc_ids)
+    Nfeatures = len(inv_ix)
+    feature_ids = list(inv_ix.keys())
+    feature_ids.sort()
+
+    # Filter features if it's necessary
+    '''
+    To select meta-tags (Nouns, Determiner)
+    '''
+    # selected_features = [u'N']
+    # META-TAGS
+    # [u'A', u'C', u'D', u'F', u'I', u'N', u'P'
+    # , u'R', u'S', u'V', u'W', u'Z']
+    # [u'adjective', u'conjunction', u'determiner', u'punctuation', u'interjection', u'noun', u'pronoun',
+    # u'adverb', u'adposition', u'verb', u'date', u'number']
+    buffer_feat = []
+    for i in range(len(feature_ids)):
+        for sf in selected_features:
+            if feature_ids[i].startswith(sf):
+                buffer_feat.append(feature_ids[i])
+
+    # for i in range(len(feature_ids)):
+    #    if feature_ids[i][0] in selected_features:
+    #        buffer_feat.append(feature_ids[i])
+
+    feature_ids = buffer_feat
+    Nfeatures = len(feature_ids)
+
+    # Saving features in the employed order
+    with open(path + '/' + 'features', 'w') as fp:
+        for t in feature_ids:
+            fp.write(t + '\n')
+
+    #print "Using features:", '/'.join(selected_features)
+    #print "Features saved in file 'features'"
+
+    X = np.zeros((Ndocs, Nfeatures))
+
+    for i in range(Ndocs):
+        docid_i = doc_ids[i]  # gets the name of the document
+        for feat in feature_ids:
+            tf_i = inv_ix[feat].get(docid_i, 0.0)
+            j = feature_ids.index(feat)
+            X[i, j] = tf_i
+
+    np.savetxt(path + '/' + "doc_vectors.csv", X, delimiter=",", fmt='%.6e')
+
+
+def vectorize_with_previous_features_raw(path='.'):
+    #print "vectorize_with_previous_features()"
+    print "*************************\nCOMPUTING RAW FREQUENCIES FOR TAG FEATURES USING PREVIOUSLY EXTRACTED FEATURE\n****************************\n"
+
+    import numpy as np
+    import json
+
+    # Load the inverted index with the features and the freqs:
+    with open(path+'/'+'inv_index.json', 'r') as fp:
+        inv_ix = json.load(fp)
+
+    tagsf = open(path+'/'+'features')
+    features = [l.strip() for l in tagsf]
+    tagsf.close()
+    features.sort()
+    Nfeatures = len(features)
+
+    doc_ids= [l.strip().split(" ")[0] for l in open(path+'/'+'classes')]
+    #doc_ids = max_tagfreq.keys()
+
+    Ndocs = len(doc_ids)
+
+    #feature_ids = list(inv_ix.keys())
+    #feature_ids.sort()
+
+
+    X = np.zeros((Ndocs,Nfeatures))
+
+    for i in range(Ndocs):
+        docid_i = doc_ids[i] # gets the name of the document
+        for feat in features:
+            if feat in inv_ix:
+                tf_i = inv_ix[feat].get(docid_i, 0.0)
+
+                j = features.index(feat)
+                X[i, j] = tf_i
 
     np.savetxt(path+'/'+"doc_vectors.csv", X, delimiter=",",fmt='%.6e')
 
@@ -162,12 +271,25 @@ if __name__ == "__main__":
     #main()
 
     if len(sys.argv) > 1:
-        if sys.argv[1] == 'use-features':
-            print "Using features collected in a previous processing."
-            vectorize_with_previous_features(path='.')
+        if sys.argv[1] == 'use-norm-features':
+            print "Using normalized features collected in a previous processing."
+            vectorize_with_previous_features_normalized(path='.')
+
+        elif sys.argv[1] == 'use-raw-features':
+            print "Using raw features collected in a previous processing."
+            vectorize_with_previous_features_raw(path='.')
+
+        elif sys.argv[1] == 'build-raw-features':
+            print "Building raw features."
+            vectorize_with_specific_tags_raw(sys.argv[2].split(','), path='.')
+
+        elif sys.argv[1] == 'build-norm-features': # build-norm-features
+            print "Building normalized features."
+            vectorize_with_specific_tags_normalized(sys.argv[2].split(','), path='.')
         else:
-            print "Using specific meta-pos-tags as features."
-            vectorize_with_specific_tags(sys.argv[1].split(','), path='.')
+            print "Usage:", sys.argv[0], "[use-features]|[comma_separated_list_of_pos_tags_or_initials]"
+            sys.exit()
+
     else:
         print "Usage:", sys.argv[0], "[use-features]|[comma_separated_list_of_pos_tags_or_initials]"
         sys.exit()

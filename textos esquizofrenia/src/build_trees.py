@@ -55,26 +55,30 @@ X2,Y2 = sm.fit_sample(X2, Y2)
 X3,Y3 = sm.fit_sample(X3, Y3)
 
 
+pos_names = dict(zip(['A', 'C', 'D', 'F', 'I', 'N', 'P', 'R', 'S', 'V', 'W', 'Z'],
+                         ['adjective', 'conjunction', 'determiner', 'punctuation', 'interjection', 'noun',
+                          'pronoun', 'adverb', 'adposition', 'verb', 'date', 'number']))
+
 
 
 
 clf1 = tree.DecisionTreeClassifier(class_weight= None,criterion= 'entropy',max_depth= 4,max_features= None,max_leaf_nodes= None,min_impurity_split= 1e-07,min_samples_leaf= 9,min_samples_split= 6,min_weight_fraction_leaf= 0.0,presort= False,random_state= 42,splitter= 'best')
 clf1 = clf1.fit(X1,Y1)
-dot_data1 = tree.export_graphviz(clf1, out_file=None,feature_names=features_train1,class_names=['ctrl','expr'],filled=True, rounded=True,special_characters=True)
+dot_data1 = tree.export_graphviz(clf1, out_file=None,feature_names=[pos_names[x] for x in features_train1],class_names=['ctrl','expr'],filled=True, rounded=True,special_characters=True)
 graph1 = pydotplus.graph_from_dot_data(dot_data1)
 graph1.write_pdf("tree-dataset-1.pdf")
 
 
 clf2 = tree.DecisionTreeClassifier(class_weight= None,criterion= 'entropy',max_depth= 3,max_features= None,max_leaf_nodes= None,min_impurity_split= 1e-07,min_samples_leaf= 5,min_samples_split= 4,min_weight_fraction_leaf= 0.0,presort= False,random_state= 42,splitter= 'best')
 clf2 = clf2.fit(X2,Y2)
-dot_data2 = tree.export_graphviz(clf2, out_file=None,feature_names=features_train1,class_names=['ctrl','expr'],filled=True, rounded=True,special_characters=True)
+dot_data2 = tree.export_graphviz(clf2, out_file=None,feature_names=[pos_names[x] for x in features_train2],class_names=['ctrl','expr'],filled=True, rounded=True,special_characters=True)
 graph2 = pydotplus.graph_from_dot_data(dot_data2)
 graph2.write_pdf("tree-dataset-2.pdf")
 
 
 clf3 = tree.DecisionTreeClassifier(class_weight= None,criterion= 'entropy',max_depth= 3,max_features= None,max_leaf_nodes= None,min_impurity_split= 1e-07,min_samples_leaf= 7,min_samples_split= 4,min_weight_fraction_leaf= 0.0,presort= False,random_state= 42,splitter= 'best')
 clf3 = clf3.fit(X3,Y3)
-dot_data3 = tree.export_graphviz(clf3, out_file=None,feature_names=features_train1,class_names=['ctrl','expr'],filled=True, rounded=True,special_characters=True)
+dot_data3 = tree.export_graphviz(clf3, out_file=None,feature_names=[pos_names[x] for x in features_train3],class_names=['ctrl','expr'],filled=True, rounded=True,special_characters=True)
 graph3 = pydotplus.graph_from_dot_data(dot_data3)
 graph3.write_pdf("tree-dataset-3.pdf")
 

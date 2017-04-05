@@ -421,3 +421,37 @@ for name_c, c in classifiers.items():
     logger.info('{:<10} {:.3f}({:.3f}) {:.3f}({:.3f}) {:.3f}({:.3f})'.format('Non-schizo', np.mean(eval_posclass_f1), np.std(eval_posclass_f1),
                                          np.mean(eval_posclass_precision), np.std(eval_posclass_precision),
                                          np.mean(eval_posclass_recall), np.std(eval_posclass_recall)))
+
+
+    logger.info("\nLATEX OUTPUT\n")
+    logger.info("\multicolumn{{1}}{{|c|}}{{\multirow{{2}}{{*}}{{PUT_DS_NUM}}}}&\multicolumn{{1}}{{ c | }}{{\multirow{{2}}{{*}}{{{:.3f}({:.3f})}}}} " \
+          "& Experimental& {:.3f}({:.3f}) & {:.3f}({:.3f}) & {:.3f}({:.3f}) & {:.3f}({:.3f}) & {:.3f}({:.3f}) & {:.3f}({:.3f})  \\\\  \cline{{3-9}}".format(
+        np.mean(run_aucmeans), np.std(run_aucmeans),
+        np.mean(negclass_f1),
+        np.std(negclass_f1),
+        np.mean(negclass_precision),
+        np.std(negclass_precision),
+        np.mean(negclass_recall),
+        np.mean(negclass_recall),
+        np.mean(eval_negclass_f1),
+        np.std(eval_negclass_f1),
+        np.mean(eval_negclass_precision),
+        np.std(eval_negclass_precision),
+        np.mean(eval_negclass_recall),
+        np.mean(eval_negclass_recall)
+    ))
+    logger.info("\multicolumn{{1}}{{|c|}}{{}}&\multicolumn{{1}}{{ c | }}{{}}	" \
+          "& Control & {:.3f}({:.3f}) & {:.3f}({:.3f}) & {:.3f}({:.3f}) & {:.3f}({:.3f}) & {:.3f}({:.3f}) & {:.3f}({:.3f})  \\\\ \hline".format(
+    np.mean(posclass_f1),#NOW ON TRAINING
+    np.std(posclass_f1),
+    np.mean(posclass_precision),
+    np.std(posclass_precision),
+    np.mean(posclass_recall),
+    np.std(posclass_recall),#NOW ON TESTING
+    np.mean(eval_posclass_f1),
+    np.std(eval_posclass_f1),
+    np.mean(eval_posclass_precision),
+    np.std(eval_posclass_precision),
+    np.mean(eval_posclass_recall),
+    np.std(eval_posclass_recall)
+    ))
