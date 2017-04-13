@@ -46,6 +46,43 @@ def build_tree_classifier(X, y, features,  target_names = ['negative', 'positive
     return clf
 
 
+def vectorize_term_representation(path='.'):
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from stop_words import get_stop_words
+
+    #load txts into a list
+    from os import listdir
+    stop_words = get_stop_words('es')
+
+    ctrlset = [f for f in listdir(path+'/Control') if f.endswith('txt')]
+    xprmset = [f for f in listdir(path+'/Experimental') if f.endswith('txt')]
+
+    data_list = []
+    filename_list = []
+    data_target = []
+
+    for ctrl_i in ctrlset:
+        posfile = open(path+'/Control/'+ctrl_i)
+        data_list.append(posfile.read())
+        filename_list.append(path+'/Control/'+ctrl_i)
+        data_target.append(1)
+        posfile.close()
+
+
+    for xprm_i in xprmset:
+        posfile = open(path+'/Experimental/'+xprm_i)
+        data_list.append(posfile.read())
+        filename_list.append(path+'/Experimental/'+xprm_i)
+        data_target.append(-1)
+        posfile.close()
+
+    vectorizer = TfidfVectorizer(max_df=0.5,
+                                 min_df=1, stop_words=stop_words,
+                                 use_idf=True)
+    X = vectorizer.fit_transform(data_list)
+    return X, data_target, filename_list
+    #built tfidf representation into matrix X
+    #np.savetxt(path + '/' + "doc_vectors.csv", X, delimiter=",", fmt='%.6e')
 
 def vectorize_with_specific_tags_normalized(selected_features, path='.'):
     import numpy as np
@@ -109,7 +146,7 @@ def vectorize_with_specific_tags_normalized(selected_features, path='.'):
             tf_i = inv_ix[feat].get(docid_i, 0.0) / float(max_tagfreq[docid_i])
 
             j = feature_ids.index(feat)
-            #X[i, j] = tf_i * idf_feat
+            X[i, j] = tf_i * idf_feat #### COMENTAR DESPUES
             X[i, j] = tf_i
 
 
@@ -154,7 +191,7 @@ def vectorize_with_previous_features_normalized(path='.'):
                 tf_i = inv_ix[feat].get(docid_i, 0.0) / float(max_tagfreq[docid_i])
 
                 j = features.index(feat)
-                #X[i, j] = tf_i * idf_feat
+                X[i, j] = tf_i * idf_feat # COMENTAR DESPUES
                 X[i, j] = tf_i
 
     np.savetxt(path+'/'+"doc_vectors.csv", X, delimiter=",",fmt='%.6e')

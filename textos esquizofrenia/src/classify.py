@@ -134,6 +134,7 @@ X_test, y_test, features_test  = load_data(testing_data_path)
 
 
 classifiers = dict()
+'''
 
 param_grid = [
   {'alpha': [0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3]}
@@ -178,7 +179,6 @@ param_grid = [
 classifiers["GridSearchCV(estimator=AdaBoostClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
     GridSearchCV(estimator=AdaBoostClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
 
-'''
 
 #classifiers["GaussianNB()"] = AClassifier(GaussianNB())
 #classifiers["MultinomialNB()"] = AClassifier(MultinomialNB())
