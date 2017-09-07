@@ -6,6 +6,7 @@ POS_FEATURE_OPT="use-all-features"
 
 #VECTOR_REPRESENTATION_OPT="raw-features"
 VECTOR_REPRESENTATION_OPT="norm-features"
+#VECTOR_REPRESENTATION_OPT="term-features"
 
 
 function preprocess_training_testing_sets {

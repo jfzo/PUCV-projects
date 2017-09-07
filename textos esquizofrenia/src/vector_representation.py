@@ -47,9 +47,15 @@ def build_tree_classifier(X, y, features,  target_names = ['negative', 'positive
 
 
 def vectorize_term_representation(path='.'):
+    '''
+    Builds document vector representation (TfIDf) from scratch.
+    It generates a file named 'features' containing the vocabulary generated.
+    :param path:
+    :return:
+    '''
     from sklearn.feature_extraction.text import TfidfVectorizer
     from stop_words import get_stop_words
-
+    import numpy as np
     #load txts into a list
     from os import listdir
     stop_words = get_stop_words('es')
@@ -80,9 +86,70 @@ def vectorize_term_representation(path='.'):
                                  min_df=1, stop_words=stop_words,
                                  use_idf=True)
     X = vectorizer.fit_transform(data_list)
-    return X, data_target, filename_list
+    vocabulary = vectorizer.get_feature_names()
+
+    features_out = open(path+'/features','w')
+
+    for f in vocabulary:
+        features_out.write(f.encode('utf-8')+'\n')
+    features_out.close()
+
+    np.savetxt(path + '/' + "doc_vectors.csv", X.todense(), delimiter=",", fmt='%.6e')
+
+    #vocabulary_mapping = dict([(vocabulary[i], i) for i in range(len(vocabulary))])
+    return X, vocabulary, data_target, filename_list
     #built tfidf representation into matrix X
     #np.savetxt(path + '/' + "doc_vectors.csv", X, delimiter=",", fmt='%.6e')
+
+
+def vectorize_term_representation_with_specific_vocabulary(path='.'):
+    '''
+    BUild document vectors assuming that the feature file contains the vocabulary.
+    :param path:
+    :return: Document-term Matrix (Tf-IDf), classes for each document and the filename list.
+    '''
+    from sklearn.feature_extraction.text import TfidfVectorizer
+    from stop_words import get_stop_words
+    import numpy as np
+    # load txts into a list
+    from os import listdir
+    stop_words = get_stop_words('es')
+
+    ctrlset = [f for f in listdir(path + '/Control') if f.endswith('txt')]
+    xprmset = [f for f in listdir(path + '/Experimental') if f.endswith('txt')]
+
+    data_list = []
+    filename_list = []
+    data_target = []
+
+    feats = open(path + '/' + 'features')
+    vocabulary = [l.strip() for l in feats]
+    feats.close()
+
+    for ctrl_i in ctrlset:
+        posfile = open(path + '/Control/' + ctrl_i)
+        data_list.append(posfile.read())
+        filename_list.append(path + '/Control/' + ctrl_i)
+        data_target.append(1)
+        posfile.close()
+
+    for xprm_i in xprmset:
+        posfile = open(path + '/Experimental/' + xprm_i)
+        data_list.append(posfile.read())
+        filename_list.append(path + '/Experimental/' + xprm_i)
+        data_target.append(-1)
+        posfile.close()
+
+    vectorizer = TfidfVectorizer(max_df=0.5,
+                                 min_df=1, stop_words=stop_words,
+                                 use_idf=True, vocabulary=vocabulary)
+    X = vectorizer.fit_transform(data_list)
+
+    np.savetxt(path + '/' + "doc_vectors.csv", X.todense(), delimiter=",", fmt='%.6e')
+
+    return X, data_target, filename_list
+
+
 
 def vectorize_with_specific_tags_normalized(selected_features, path='.'):
     import numpy as np
@@ -146,7 +213,7 @@ def vectorize_with_specific_tags_normalized(selected_features, path='.'):
             tf_i = inv_ix[feat].get(docid_i, 0.0) / float(max_tagfreq[docid_i])
 
             j = feature_ids.index(feat)
-            X[i, j] = tf_i * idf_feat #### COMENTAR DESPUES
+            #X[i, j] = tf_i * idf_feat #### COMENTAR DESPUES
             X[i, j] = tf_i
 
 
@@ -191,7 +258,7 @@ def vectorize_with_previous_features_normalized(path='.'):
                 tf_i = inv_ix[feat].get(docid_i, 0.0) / float(max_tagfreq[docid_i])
 
                 j = features.index(feat)
-                X[i, j] = tf_i * idf_feat # COMENTAR DESPUES
+                #X[i, j] = tf_i * idf_feat # COMENTAR DESPUES
                 X[i, j] = tf_i
 
     np.savetxt(path+'/'+"doc_vectors.csv", X, delimiter=",",fmt='%.6e')
@@ -311,24 +378,30 @@ if __name__ == "__main__":
         if sys.argv[1] == 'use-norm-features':
             print "Using normalized features collected in a previous processing."
             vectorize_with_previous_features_normalized(path='.')
-
         elif sys.argv[1] == 'use-raw-features':
             print "Using raw features collected in a previous processing."
             vectorize_with_previous_features_raw(path='.')
-
+        elif sys.argv[1] == 'use-term-features':
+            print "Building term features (Tf-IDf)."
+            # Getting the features from file sys.argv[2] located in the same directory.
+            vectorize_term_representation_with_specific_vocabulary(path='.')
+            ################### FROM NOW ON, FEATURES ARE BUILT FROM THE LEXICON GIVEN (in case of term features it is unnecessary)
         elif sys.argv[1] == 'build-raw-features':
             print "Building raw features."
             vectorize_with_specific_tags_raw(sys.argv[2].split(','), path='.')
-
         elif sys.argv[1] == 'build-norm-features': # build-norm-features
             print "Building normalized features."
             vectorize_with_specific_tags_normalized(sys.argv[2].split(','), path='.')
+        elif sys.argv[1] == 'build-term-features':
+            print "Building term features (Tf-IDf)."
+            vectorize_term_representation(path='.')
         else:
-            print "Usage:", sys.argv[0], "[use-features]|[comma_separated_list_of_pos_tags_or_initials]"
+            print "Usage:", sys.argv[0], "[use-(norm|raw|term)-features]|[build-(norm|raw|term)-features comma_separated_list_of_pos_tags_or_initials]"
             sys.exit()
 
     else:
-        print "Usage:", sys.argv[0], "[use-features]|[comma_separated_list_of_pos_tags_or_initials]"
+        print "Usage:", sys.argv[
+            0], "[use-(norm|raw|term)-features]|[build-(norm|raw|term)-features comma_separated_list_of_pos_tags_or_initials]"
         sys.exit()
 
 

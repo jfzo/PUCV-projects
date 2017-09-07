@@ -151,13 +151,15 @@ classifiers["GridSearchCV(estimator=tree.DecisionTreeClassifier(), param_grid=pa
 
 '''
 param_grid = [
+  {'C': [1, 10, 100, 1000], 'gamma': np.linspace(1e-4, 1e-1, 20), 'coef0': np.arange(-0.1, 0.1, 1e-2), 'kernel': ['sigmoid']},
+  {'C': [1, 10, 100, 1000], 'gamma': np.linspace(1e-4, 1e-1, 20), 'coef0': np.arange(-0.1, 0.1, 1e-2), 'degree' : range(2,11), 'kernel': ['poly']},
   {'C': [1, 10, 100, 1000], 'kernel': ['linear']},
-  {'C': [1, 10, 100, 1000], 'gamma': [0.001, 0.0001], 'kernel': ['rbf']},
+  {'C': [1, 10, 100, 1000], 'gamma': np.linspace(1e-4, 1e-1, 20), 'kernel': ['rbf']},
  ]
 classifiers["GridSearchCV(estimator=SVC(kernel='rbf', probability=True), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
     GridSearchCV(estimator=SVC(probability=True), param_grid=param_grid, cv=3, scoring='f1'))
 
-
+'''
 param_grid = [
   {'n_neighbors': [3,5,7,9,12,15], 'weights':['uniform', 'distance'], 'p':[1,2]}
 ]
@@ -178,6 +180,7 @@ param_grid = [
 ]
 classifiers["GridSearchCV(estimator=AdaBoostClassifier(), param_grid=param_grid, cv=3, scoring='f1')"] = AClassifier(
     GridSearchCV(estimator=AdaBoostClassifier(), param_grid=param_grid, cv=3, scoring='f1'))
+'''
 
 
 #classifiers["GaussianNB()"] = AClassifier(GaussianNB())

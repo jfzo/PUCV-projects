@@ -12,11 +12,12 @@ function execute_experimentation {
 	# A,C,D,F,I,N,P,R,S,V,W,Z
 	rm -f testing/results_$1.log
 	./build_vector_representation.sh $1
-	python ../src/classify.py --tr training --ts testing -o testing -r 10 -k 3 -l testing/results_$1.log
+	 python ../src/classify.py --tr training --ts testing -o testing -r 10 -k 3 -l testing/results_$1.log
 }
 
 
 features='A,C,D,F,I,N,P,R,S,V,W,Z'
+#features='tfidf'
 
 if [ $# -eq 0 ]
   then

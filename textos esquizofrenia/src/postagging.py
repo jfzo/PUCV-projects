@@ -33,9 +33,12 @@ for paragraph in cc['paragraphs']: # each item is a dict with key -> 'sentences'
     for sentence in paragraph['sentences']:# each item is a dict with keys ->'tokens' (list with tokens) , 'id' (sentence num)
         for token in sentence['tokens']:# each item is a dict with keys -> 'ctag', 'form', 'pos', 'lemma', 'tag', 'id'
             token_info = token['form'], token['tag']
-            if not token_info[0] in string.punctuation:
+            #if not token_info[0] in string.punctuation:
+            if token['tag'] != 'Fz': # punctuation - other
                 tags_found.add(token['tag'])
                 out.write('{0}:{1}\n'.format(token_info[0].encode('utf-8'), token_info[1]) )
+            else:
+                print "Strange punctuation tag found. Not considered."
 
 
 
